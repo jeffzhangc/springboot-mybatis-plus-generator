@@ -8,11 +8,14 @@ import com.baomidou.mybatisplus.generator.config.*;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import lombok.Data;
+import org.springframework.beans.factory.config.YamlProcessor;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -22,16 +25,16 @@ public class CodeGenerator {
     /**
      * 配置文件名
      */
-    private final static String APP_PROPERTY = "application.properties";
+    private final static String APP_PROPERTY = "application-dev.properties";
     private String projectPath = System.getProperty("user.dir");
     /**
      * 公共包路径
      */
-    private String parentPackage = "cn.hellochaos";
+    private String parentPackage = "com.hc";
     /**
      * 模块名
      */
-    private String module = "generator";
+    private String module = "ngsutilsapi";
 
     /**
      * 自定义模板位置
@@ -75,11 +78,14 @@ public class CodeGenerator {
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
         gc.setOutputDir(projectPath + "/src/main/java");
-        gc.setAuthor(scanner("Author"));
+//        gc.setAuthor(scanner("Author"));
+
+//        gc.setAuthor("jeff.zhanghl");
+        gc.setAuthor(System.getProperty("user.name", "test"));
         gc.setOpen(false);
         gc.setActiveRecord(true);
         gc.setIdType(IdType.AUTO);
-        gc.setServiceName("%sService");
+        gc.setServiceName("I%sService");
         gc.setBaseResultMap(true);
         gc.setBaseColumnList(true);
         gc.setFileOverride(true);
@@ -100,6 +106,10 @@ public class CodeGenerator {
             @Override
             public void initMap() {
                 // to do nothing
+                Map<String, Object> map = new HashMap<>();
+                map.put("parentPackage", pc.getParent());
+                map.put("moduleName", pc.getModuleName());
+                setMap(map);
             }
         };
         mpg.setCfg(cfg);
@@ -110,10 +120,11 @@ public class CodeGenerator {
         //指定自定义模板路径，注意不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
         templateConfig.setXml(null);
         templateConfig.setService(serviceTemplate);
-        templateConfig.setServiceImpl(serviceImplTemplate);
+//        templateConfig.setServiceImpl(serviceImplTemplate);
         templateConfig.setMapper(mapperTemplate);
         templateConfig.setController(controllerTemplate);
         mpg.setTemplate(templateConfig);
+
 
         // 策略配置
         StrategyConfig strategy = new StrategyConfig();
@@ -126,7 +137,8 @@ public class CodeGenerator {
 //        strategy.setSuperControllerClass("你自己的父类控制器,没有就不用设置!");
         // 写于父类中的公共字段
         strategy.setSuperEntityColumns("id");
-        strategy.setInclude(scanner("表名，多个英文逗号分割").split(","));
+//        strategy.setInclude(scanner("表名，多个英文逗号分割").split(","));
+        strategy.setInclude("entity,project".split(","));
         strategy.setControllerMappingHyphenStyle(true);
 //        strategy.setTablePrefix(pc.getModuleName() + "_");
         mpg.setStrategy(strategy);
@@ -145,6 +157,7 @@ public class CodeGenerator {
             InputStream inStream = new FileInputStream(new File(resourcePath));
             Properties prop = new Properties();
             prop.load(inStream);
+
 
             dsc.setUrl(prop.getProperty("spring.datasource.url"));
             dsc.setDriverName(prop.getProperty("spring.datasource.driver-class-name"));

@@ -1,20 +1,16 @@
 package ${package.Controller};
 
-
-import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import ${package.Entity}.dto.ResultBean;
-import ${package.Service}.${table.serviceName};
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hc.${package.ModuleName}.configer.ApiResponse;
 import ${package.Entity}.${entity};
-<#if restControllerStyle>
-import org.springframework.web.bind.annotation.RestController;
-<#else>
-import org.springframework.stereotype.Controller;
-</#if>
-<#if superControllerClassPackage??>
-import ${superControllerClassPackage};
-</#if>
-import javax.annotation.Resource;
+import ${package.Service}.${table.serviceName};
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 /**
@@ -23,68 +19,115 @@ import javax.annotation.Resource;
  * </p>
  *
  * @author ${author}
- * @since ${date}
  * @version v1.0
+ * @since ${date}
  */
-<#if restControllerStyle>
 @RestController
-<#else>
-@Controller
-</#if>
-@RequestMapping("<#if package.ModuleName??>/${package.ModuleName}</#if>/api/v1/<#if controllerMappingHyphenStyle??>${controllerMappingHyphen}<#else>${table.entityPath}</#if>")
-<#if kotlin>
-class ${table.controllerName}<#if superControllerClass??> : ${superControllerClass}()</#if>
-<#else>
-    <#if superControllerClass??>
-public class ${table.controllerName} extends ${superControllerClass} {
-    <#else>
+@RequestMapping("/${entity?uncap_first}")
 public class ${table.controllerName} {
-    </#if>
-
-    @Resource
-    private ${table.serviceName} ${table.serviceName?uncap_first};
+    @Autowired
+    private ${table.serviceName} ${entity?uncap_first}Service;
 
     /**
-    * 查询分页数据
-    */
-    @RequestMapping(method = RequestMethod.GET)
-    public ResultBean<?> listByPage(@RequestParam(name = "page", defaultValue = "1") int page,
-                                    @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-                                    @RequestParam(name = "factor", defaultValue = "") String factor) {
-        return new ResultBean<>(${table.serviceName?uncap_first}.list${entity}sByPage(page, pageSize,factor));
+     * 新增
+     *
+     * @param ${entity?uncap_first}
+     * @return
+     */
+    @PostMapping
+    public ApiResponse<?> createEntity(@RequestBody ${entity} ${entity?uncap_first}) {
+        LocalDateTime now = LocalDateTime.now();
+        ${entity?uncap_first}.setCreatedAt(now);
+        ${entity?uncap_first}.setUpdatedAt(now);
+        boolean created = ${entity?uncap_first}Service.save(${entity?uncap_first});
+        if (created) {
+            return ApiResponse.ok(${entity?uncap_first}); // 返回创建的用户对象
+        } else {
+            return ApiResponse.resultCreateError("创建失败");
+        }
     }
 
 
     /**
-    * 根据id查询
-    */
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}")
-    public ResultBean<?> getById(@PathVariable("id") Integer id) {
-        return new ResultBean<>(${table.serviceName?uncap_first}.get${entity}ById(id));
+     * 分页
+     *
+     * @param page
+     * @param size
+     * @return
+     */
+    @GetMapping("/page")
+    public ApiResponse<Page<${entity}>> get${entity}Page(
+        @RequestParam(value = "page", defaultValue = "1") int page,
+        @RequestParam(value = "size", defaultValue = "10") int size) {
+        QueryWrapper<${entity}> queryWrapper = new QueryWrapper<>();
+
+        queryWrapper.orderByAsc("${entity?uncap_first}_id");
+
+        Page<${entity}> pageResult = ${entity?uncap_first}Service.page(new Page<>(page, size), queryWrapper);
+        return ApiResponse.ok(pageResult);
     }
 
     /**
-    * 新增
-    */
-    @RequestMapping(method = RequestMethod.POST)
-    public ResultBean<?> insert(@RequestBody ${entity} ${entity?uncap_first}) {
-        return new ResultBean<>(${table.serviceName?uncap_first}.insert${entity}(${entity?uncap_first}));
+     * 查询列表
+     *
+     * @return
+     */
+    @GetMapping("/list")
+    public ApiResponse<List<${entity}>> get${entity}List() {
+        QueryWrapper<${entity}> queryWrapper = new QueryWrapper<>();
+        List<${entity}> list = ${entity?uncap_first}Service.list(queryWrapper);
+        return ApiResponse.ok(list);
     }
 
     /**
-    * 删除
-    */
-    @RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
-    public ResultBean<?> deleteById(@PathVariable("id") Integer id) {
-        return new ResultBean<>(${table.serviceName?uncap_first}.delete${entity}ById(id));
+     * 根据ID获取
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public ApiResponse<${entity}> get${entity}ById(@PathVariable Long id) {
+        ${entity} ${entity?uncap_first} = ${entity?uncap_first}Service.getById(id);
+        return ${entity?uncap_first} != null ? ApiResponse.ok(${entity?uncap_first}) : ApiResponse.result404(null);
     }
 
     /**
-    * 修改
-    */
-    @RequestMapping(method = RequestMethod.PUT)
-    public ResultBean<?> updateById(@RequestBody ${entity} ${entity?uncap_first}) {
-        return new ResultBean<>(${table.serviceName?uncap_first}.update${entity}(${entity?uncap_first}));
+     * 更新
+     *
+     * @param id
+     * @param ${entity?uncap_first}
+     * @return
+     */
+    @PutMapping("/{id}")
+    public ApiResponse<?> update${entity}(@PathVariable Long id, @RequestBody ${entity} ${entity?uncap_first}) {
+        ${entity} exist${entity} = ${entity?uncap_first}Service.getById(id);
+        if (exist${entity} == null) {
+            return ApiResponse.result404(null);
+        }
+        // 暂时先不用
+        BeanUtils.copyProperties(${entity?uncap_first}, exist${entity}, "${entity?uncap_first}Id");
+        exist${entity}.setUpdatedAt(LocalDateTime.now());
+        boolean updated = ${entity?uncap_first}Service.updateById(exist${entity});
+        if (updated) {
+           return ApiResponse.ok(exist${entity}); // 返回更新后信息
+        } else {
+            return ApiResponse.resultUpdateError("更新失败");
+        }
+    }
+
+    /**
+     * 删除
+     *
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<?> delete${entity}(@PathVariable Long id) {
+        boolean removed = ${entity?uncap_first}Service.removeById(id);
+        if (removed) {
+            return ApiResponse.ok(null);
+        } else {
+            return ApiResponse.resultDeleteError("删除失败");
+        }
     }
 }
-</#if>
